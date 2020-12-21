@@ -1,0 +1,1 @@
+{"hidden_size": 128, "dropout_p": 0.25, "rnn_type":"lstm", "num_layers":1}
