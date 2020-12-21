@@ -78,6 +78,7 @@ We need to create a custom dataset by subclassing the Dataset class that can be 
 The code for the custom dataset class is given below which can be found in [dataset.py](https://github.com/sabbiracoustic1006/image-caption-generation/blob/main/dataset.py) file. We have to pass the paths of the images, a dictionary containing paths as keys and the target caption as values, and a torchvision transform in the constructor of the CaptionDataset class. We also need a tokenizer to tokenize the target sentence and convert it to a numerical sequence. For the tokenizer, vocabulary ids and embedding we use pretrained byte pair encoding embedding that can be found at this [link](https://nlp.h-its.org/bpemb/). For my solution, I have used a vocab size of 10000 with embedding dimension 300.
 
 ```markdown
+# custom dataset for the dataloader
 class CaptionDataset(Dataset):
     def __init__(self, paths, caption_dict, transform):
         self.paths = paths
@@ -122,11 +123,72 @@ def get_transforms():
                                                            std=[0.229, 0.224, 0.225])])
     return train_transform, test_transform
 
+# prepare the dataset instances of CaptionDataset class for training and validation
 train_transform, valid_transform = get_transforms()
 train_ds = CaptionDataset(train_paths, caption_dict, train_transform)
 valid_ds = CaptionDataset(valid_paths, caption_dict, valid_transform)
 
+# prepare the dataloader instances for training and validation
 train_dataloader = DataLoader(train_ds, shuffle=True, batch_size=batch_size, collate_fn=collate_fn, num_workers=4)
 valid_dataloader = DataLoader(valid_ds, shuffle=False, batch_size=batch_size, collate_fn=collate_fn, num_workers=4)
 ```
 
+## 3) Prepare the Model, optimizer, loss function and the learning rate scheduler
+
+I used CNN encoder with LSTM decoder. I used a pretrained resnet18 cnn model as my encoder and created two states for initial hidden and cell states of the lstm. The code for model encoder is given below.
+
+```markdown
+# CNN encoder
+class Encoder(nn.Module):
+    def __init__(self, cnn='resnet18', num_features=512, hidden_size=128):
+        super().__init__()
+        cnn_model = getattr(torchvision.models, cnn)(pretrained=True)
+        feat_ext_layers = list(cnn_model.children())[:-1]
+        self.encoder = nn.Sequential(*feat_ext_layers)
+        self.hidden_state = nn.Linear(num_features, hidden_size)
+        self.cell_state = nn.Linear(num_features, hidden_size)
+    
+    def forward(self, x):
+        out = self.encoder(x).flatten(1)
+        hidden_state = self.hidden_state(out).unsqueeze(0)
+        cell_state = self.cell_state(out).unsqueeze(0)
+        return hidden_state, cell_state
+```
+
+The decoder is a configurable LSTM decoder where multilayer LSTM can be used with hidden size and desired vocabulary size. For reducing hassle, I used pretrained subword embedding that can be found at this [link](https://nlp.h-its.org/bpemb/). The code for the decoder is given below.
+
+```markdown
+class Decoder(nn.Module):
+    def __init__(self, rnn_type='gru', input_size=300, hidden_size=128, dropout_p=0.25,
+                 num_layers=1, vocab_size=10000):
+        super().__init__()
+        rnn = nn.GRU if rnn_type == 'gru' else nn.LSTM
+        bpemb_bn = BPEmb(lang="en", vs=vocab_size, dim=300) #tensor(bpemb_zh.vectors)
+        tensor = self.get_appended_embedding(bpemb_bn)
+        self.embedding = nn.Embedding.from_pretrained(tensor, padding_idx=10000, freeze=False)
+        self.rnn = rnn(input_size, hidden_size, num_layers, dropout=dropout_p)
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        self.classifier = nn.Linear(self.hidden_size, vocab_size, bias=True)
+        
+    def get_appended_embedding(self, bpemb_bn):
+        tensor = torch.cat([torch.tensor(bpemb_bn.vectors),
+                            torch.zeros(1,300)
+                           ])
+        return tensor
+    
+    def forward(self, input, hi):
+        # input shape: (1, batch_size)
+        # hi shape: (num_layers, batch_size , hidden_size)
+        embedded_seq = self.embedding(input)
+        # embedded_seq shape: (1, batch_size, input_size)
+        out, ho = self.rnn(embedded_seq, hi)
+        # out shape: (1, batch_size, hidden_size)
+        # ho shape: (num_layers, batch_size, hidden_size)
+        out = out.permute(1, 0, 2)
+        # out shape: (batch_size, 1, hidden_size)
+        pred = self.classifier(out)
+        # pred shape: (batch_size, 1, vocab_size)
+        return pred.squeeze(1), ho
+    
+```
