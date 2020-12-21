@@ -196,6 +196,7 @@ class Decoder(nn.Module):
 The encoder and decoder are combined in a single class to create the CaptionModel class.
 
 ```markdown
+# caption model class for combining the encoder and decoder
 class CaptionModel(nn.Module):
     def __init__(self, vocab_size=10000, embedding_size=300, hidden_size=256,
                  num_layers=1, dropout_p=0.25, rnn_type='lstm',teacher_forcing_ratio=0.5):
