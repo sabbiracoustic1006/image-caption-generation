@@ -285,3 +285,44 @@ loss_func = nn.CrossEntropyLoss(ignore_index=args.padding_idx)
 ## 4) Write code for training loop
 
 The model has to be trained for 40 epochs to get a reasonable performance. The training code can be found in [train.py](https://github.com/sabbiracoustic1006/image-caption-generation/blob/main/train.py) 
+
+```markdown
+# train the model from command line using the command
+python train.py --key caption_model --epochs 40 --batch_size 64 \
+                --device cuda --padding_idx 10000
+```
+
+## 5) Save Model for the best evaluation results
+I monitored sentence_bleu score on the validation set throughout the training to save the model with best bleu score. The calculation of bleu score can be done with the following function.
+
+```markdown
+# calculate bleu score for pred sequences and target sequences
+def calc_bleu_score(y_true, y_pred):
+    # y_true shape (seq_len, batch_size)
+    # y_pred shape (seq_len, batch_size)
+    batch_size = y_true.shape[1]
+    score = 0
+    for j in range(batch_size):
+        y_true_sample = y_true[:,j]
+        y_pred_sample = y_pred[:,j]
+        y_true_sample_important = y_true_sample[y_true_sample != 10000]
+        y_pred_sample_important = y_pred_sample[y_true_sample != 10000]
+        r = tokenizer.word_tokenize(bpe_eng.decode_ids(y_true_sample_important.tolist()))
+        h = tokenizer.word_tokenize(bpe_eng.decode_ids(y_pred_sample_important.tolist()))
+        score += nltk.translate.bleu_score.sentence_bleu([r],h)
+        
+    bleu = score/batch_size
+    return bleu
+    
+# the best model is saved using the following code
+if valid_bleu > best_bleu:
+    print('validation bleu improved from %.4f to %.4f'%(best_bleu,valid_bleu))
+    print('saving model...')
+    torch.save({'model_state_dict':model.state_dict(),
+                'optimizer_state_dict':optimizer.state_dict(),
+                'scheduler_state_dict':scheduler.state_dict()}, f'saved_models/{args.key}/state.pth')
+
+    best_bleu = valid_bleu
+    
+```
+
