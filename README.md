@@ -3,7 +3,16 @@ This repository contains code written using PyTorch library to train and infer u
 * Encoder
 * Decoder
 
-The Encoder is a Convolutional Neural Network to create a feature representation of the image and the Decoder is a LSTM that can be configured to decode the representation of the image to a sentence. Some sample images with predicted captions from the validation set is shown below.
+The Encoder is a Convolutional Neural Network to create a feature representation of the image and the Decoder is a LSTM that can be configured to decode the representation of the image to a sentence. Some sample images with predicted captions from the validation set are shown below.
+
+![image1](https://github.com/sabbiracoustic1006/image-caption-generation/blob/main/samples/COCO_train2014_000000016765.jpg_captioned.jpg)
+![image2](https://github.com/sabbiracoustic1006/image-caption-generation/blob/main/samples/COCO_train2014_000000025528.jpg_captioned.jpg)
+![image3](https://github.com/sabbiracoustic1006/image-caption-generation/blob/main/samples/COCO_train2014_000000027796.jpg_captioned.jpg)
+![image4](https://github.com/sabbiracoustic1006/image-caption-generation/blob/main/samples/COCO_train2014_000000037377.jpg_captioned.jpg)
+![image5](https://github.com/sabbiracoustic1006/image-caption-generation/blob/main/samples/COCO_train2014_000000039017.jpg_captioned.jpg)
+![image6](https://github.com/sabbiracoustic1006/image-caption-generation/blob/main/samples/COCO_train2014_000000039447.jpg_captioned.jpg)
+![image7](https://github.com/sabbiracoustic1006/image-caption-generation/blob/main/samples/COCO_train2014_000000041152.jpg_captioned.jpg)
+![image8](https://github.com/sabbiracoustic1006/image-caption-generation/blob/main/samples/COCO_train2014_000000045226.jpg_captioned.jpg)
 
 
 The steps for training the model is summarized in keypoints below:
