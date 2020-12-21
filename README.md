@@ -1,9 +1,10 @@
 # image-caption-generation
-This repository contains code written using PyTorch library to train and infer from an image caption model. The model has two parts:
+This repository contains code written using PyTorch library to train and infer using an image caption model. The model has two parts:
 * Encoder
 * Decoder
 
-The Encoder is a Convolutional Neural Network to create a feature representation of the image and the Decoder is a LSTM that can be configured to decode the representation of the image to a sentence.
+The Encoder is a Convolutional Neural Network to create a feature representation of the image and the Decoder is a LSTM that can be configured to decode the representation of the image to a sentence. Some sample images with predicted captions from the validation set is shown below.
+
 
 The steps for training the model is summarized in keypoints below:
 1. Download COCO dataset
