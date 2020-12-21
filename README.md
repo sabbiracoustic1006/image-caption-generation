@@ -268,3 +268,17 @@ The model can be configured by editing the [config.json](https://github.com/sabb
 ```markdown
 {"hidden_size": 128, "dropout_p": 0.25, "rnn_type":"lstm", "num_layers":1, "vocab_size":10000, "embedding_size":300}
 ```
+
+The model, optimizer, lr_scheduler and the loss functions are instantiated using the code below.
+```markdown
+# load the json file as a dictionary
+with open('config.json','r') as f:
+    model_config = json.load(f)
+# instantiate the model class
+model = get_model(**model_config)
+model.to(device)
+optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.7, patience=2, verbose=True, min_lr=1e-6, mode='max')
+# padding index is 10000 used for vocabulary size 10000
+loss_func = nn.CrossEntropyLoss(ignore_index=args.padding_idx) 
+```
