@@ -75,7 +75,7 @@ see_random_img(content, data_root)
 The above can be found in the [dataset.py](https://github.com/sabbiracoustic1006/image-caption-generation/blob/main/dataset.py) file
 
 We need to create a custom dataset by subclassing the Dataset class that can be imported from torch.utils.data
-The code for the custom dataset class is given below which can be found in [dataset.py](https://github.com/sabbiracoustic1006/image-caption-generation/blob/main/dataset.py) file.
+The code for the custom dataset class is given below which can be found in [dataset.py](https://github.com/sabbiracoustic1006/image-caption-generation/blob/main/dataset.py) file. We have to pass the paths of the images, a dictionary containing paths as keys and the target caption as values, and a torchvision transform in the constructor of the CaptionDataset class. We also need a tokenizer to tokenize the target sentence and convert it to a numerical sequence. For the tokenizer, vocabulary ids and embedding we use pretrained byte pair encoding embedding that can be found at this [link](https://nlp.h-its.org/bpemb/). For my solution, I have used a vocab size of 10000 with embedding dimension 300.
 
 ```markdown
 class CaptionDataset(Dataset):
@@ -84,15 +84,49 @@ class CaptionDataset(Dataset):
         self.caption_dict = caption_dict
         self.bpe = BPEmb(lang="en", vs=10000, dim=300)
         self.transform = transform
-        
+    
+    # dunder method for getting length of the instances of the class
     def __len__(self):
         return len(self.paths)
-        
+    
+    # dunder method for getting samples corresponding to the index
     def __getitem__(self, idx):
+        # load path
         path = self.paths[idx]
+        # load image using PIL
         img = Image.open(path).convert('RGB')
+        # load the caption
         caption = self.caption_dict[path]
+        # convert the pil image using torchvision transform
         img_tensor = self.transform(img)
+        # the target caption is tokenized and converted to target vocab ids with SOS and EOS
         caption_label = torch.tensor(self.bpe.encode_ids_with_bos_eos(caption))
+        return img_tensor, caption_label
+
+# function for padding the variable target caption sequence to max length sequence of a batch
+def collate_fn(batch):
+    seq = torch.cat([el[0].unsqueeze(0) for el in batch if not isinstance(el[0],int)]).float()
+    label = pad_sequence([el[1] for el in batch if not isinstance(el[0],int)],padding_value=10000).long()
+    return seq,label
+    
+# torchvision transforms for training and validation. Consists of resize, random horizontal flip with probability of 0.5, random rotation, random crop of 224x224
+# training images are lightly augmented but the validation images or test images are not augmented at all
+# the image net stats are used for normalizing the image tensor since, pretrained cnn is used as encoder
+def get_transforms():
+    train_transform = T.Compose([T.Resize((256,256)), T.RandomHorizontalFlip(0.5), 
+                                 T.RandomAffine((5,30)), T.RandomCrop(224), 
+                                 T.ToTensor(), T.Normalize(mean=[0.485, 0.456, 0.406],
+                                                     std=[0.229, 0.224, 0.225])])    
+    test_transform = T.Compose([T.Resize((224,224)), 
+                                T.ToTensor(), T.Normalize(mean=[0.485, 0.456, 0.406],
+                                                           std=[0.229, 0.224, 0.225])])
+    return train_transform, test_transform
+
+train_transform, valid_transform = get_transforms()
+train_ds = CaptionDataset(train_paths, caption_dict, train_transform)
+valid_ds = CaptionDataset(valid_paths, caption_dict, valid_transform)
+
+train_dataloader = DataLoader(train_ds, shuffle=True, batch_size=batch_size, collate_fn=collate_fn, num_workers=4)
+valid_dataloader = DataLoader(valid_ds, shuffle=False, batch_size=batch_size, collate_fn=collate_fn, num_workers=4)
 ```
 
