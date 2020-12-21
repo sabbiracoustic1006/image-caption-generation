@@ -74,3 +74,25 @@ see_random_img(content, data_root)
 
 The above can be found in the [dataset.py](https://github.com/sabbiracoustic1006/image-caption-generation/blob/main/dataset.py) file
 
+We need to create a custom dataset by subclassing the Dataset class that can be imported from torch.utils.data
+The code for the custom dataset class is given below which can be found in [dataset.py](https://github.com/sabbiracoustic1006/image-caption-generation/blob/main/dataset.py) file.
+
+```markdown
+class CaptionDataset(Dataset):
+    def __init__(self, paths, caption_dict, transform):
+        self.paths = paths
+        self.caption_dict = caption_dict
+        self.bpe = BPEmb(lang="en", vs=10000, dim=300)
+        self.transform = transform
+        
+    def __len__(self):
+        return len(self.paths)
+        
+    def __getitem__(self, idx):
+        path = self.paths[idx]
+        img = Image.open(path).convert('RGB')
+        caption = self.caption_dict[path]
+        img_tensor = self.transform(img)
+        caption_label = torch.tensor(self.bpe.encode_ids_with_bos_eos(caption))
+```
+
