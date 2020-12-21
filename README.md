@@ -72,4 +72,5 @@ data_root = '/media/ratul/mydrive/image-caption-data/train2014/train2014'
 see_random_img(content, data_root)
 ```
 
+The above can be found in the [dataset.py](https://github.com/sabbiracoustic1006/image-caption-generation/blob/main/dataset.py) file
 
