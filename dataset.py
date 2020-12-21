@@ -28,11 +28,11 @@ def get_transforms():
     return train_transform, test_transform
 
 
-def see_random_img(annot):
+def see_random_img(annot, data_root):
     annotations = annot['annotations']
     annotation = random.sample(annotations,1)[0]
     img_id = annotation['image_id']
-    img_path = f'/media/ratul/mydrive/image-caption-data/train2014/train2014/COCO_train2014_{img_id:012d}.jpg'
+    img_path = f'{data_root}/COCO_train2014_{img_id:012d}.jpg'
     img = cv2.imread(img_path)[:,:,[2,1,0]]
     plt.figure(figsize=(15,15))
     plt.imshow(img)
@@ -70,7 +70,6 @@ class CaptionDataset(Dataset):
     
 def collate_fn(batch):
     seq = torch.cat([el[0].unsqueeze(0) for el in batch if not isinstance(el[0],int)]).float()
-    # print(seq.shape)
     label = pad_sequence([el[1] for el in batch if not isinstance(el[0],int)],padding_value=10000).long()
     return seq,label
 
@@ -91,8 +90,9 @@ def get_dataloaders(batch_size=8):
 
 
 if __name__ == '__main__':
-    paths = glob('/media/ratul/mydrive/image-caption-data/train2014/train2014/*.jpg')
+    data_root = '/media/ratul/mydrive/image-caption-data/train2014/train2014'
+    paths = glob(f'{data_root}/*.jpg')
     with open('/media/ratul/mydrive/image-caption-data/annotations/captions_train2014.json','r') as f:
         content = json.load(f)
     print(len(paths))
-    see_random_img(content)
+    see_random_img(content, data_root)
