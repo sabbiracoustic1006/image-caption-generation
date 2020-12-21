@@ -158,6 +158,7 @@ class Encoder(nn.Module):
 The decoder is a configurable LSTM decoder where multilayer LSTM can be used with hidden size and desired vocabulary size. For reducing hassle, I used pretrained subword embedding that can be found at this [link](https://nlp.h-its.org/bpemb/). The code for the decoder is given below.
 
 ```markdown
+# Decoder RNN class 
 class Decoder(nn.Module):
     def __init__(self, rnn_type='gru', input_size=300, hidden_size=128, dropout_p=0.25,
                  num_layers=1, vocab_size=10000):
@@ -190,5 +191,64 @@ class Decoder(nn.Module):
         pred = self.classifier(out)
         # pred shape: (batch_size, 1, vocab_size)
         return pred.squeeze(1), ho
+```
+
+The encoder and decoder are combined in a single class to create the CaptionModel class.
+
+```markdown
+class CaptionModel(nn.Module):
+    def __init__(self, vocab_size=10000, embedding_size=300, hidden_size=256,
+                 num_layers=1, dropout_p=0.25, rnn_type='lstm',teacher_forcing_ratio=0.5):
+        super().__init__()
+        self.vocab_size = vocab_size
+        self.teacher_forcing_ratio = teacher_forcing_ratio
+        self.encoder = Encoder()                               
+        self.decoder = Decoder(vocab_size=vocab_size, input_size=embedding_size, num_layers=num_layers,  
+                               hidden_size=hidden_size, dropout_p=dropout_p, rnn_type=rnn_type)
+                               
+    def forward(self, img, target):
+        target_len, batch_size = target.shape
+        # src shape: (seq_len, batch_size)
+        outputs = torch.zeros(target_len-1, batch_size, self.vocab_size).to(target.device)
+        # outputs_shape: (target_seq_len-1, batch_size, vocab_size)
+        hidden = self.encoder(img)
+        # x shape: (seq_len, batch_size)
+        x = target[:1]
+        # x shape: (1, batch_size)
+        for t in range(1, target_len):
+            prediction, hidden = self.decoder(x, hidden)
+            # prediction shape: (batch_size, vocab_size)    
+            outputs[t-1] = prediction    
+            predicted = prediction.argmax(1)
+            # predicted_char shape: (batch_size)
+            if self.training:
+                x = target[t] if random.random() < self.teacher_forcing_ratio else predicted
+            else:
+                x = predicted
+            # x shape: (batch_size)
+            x = x.unsqueeze(0)
+            # x shape: (1, batch_size)
+        return outputs
     
+    # greedy decoding for inference
+    def greedyDecode(self, img, max_steps=50):
+        hidden = self.encoder(img)
+        # x shape: (seq_len, batch_size)
+        x = torch.tensor([1]).view(1,1).to(img.device)
+        # x shape: (1, batch_size)
+        pred_sent = []
+        for t in range(max_steps):
+            prediction, hidden = self.decoder(x, hidden)
+            # prediction shape: (batch_size, vocab_size)    
+            predicted = prediction.argmax(1)
+            # predicted_char shape: (batch_size)
+            if predicted.item() == 2:
+                break
+            
+            pred_sent.append(predicted.item())
+            x = predicted
+            # x shape: (batch_size)
+            x = x.unsqueeze(0)
+            # x shape: (1, batch_size)
+        return pred_sent
 ```
