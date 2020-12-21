@@ -263,3 +263,8 @@ class CaptionModel(nn.Module):
             # x shape: (1, batch_size)
         return pred_sent
 ```
+The model can be configured by editing the [config.json](https://github.com/sabbiracoustic1006/image-caption-generation/blob/main/config.json) file. The json file contains the configurable options below.
+
+```markdown
+{"hidden_size": 128, "dropout_p": 0.25, "rnn_type":"lstm", "num_layers":1, "vocab_size":10000, "embedding_size":300}
+```
