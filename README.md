@@ -282,3 +282,6 @@ scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.7, pa
 # padding index is 10000 used for vocabulary size 10000
 loss_func = nn.CrossEntropyLoss(ignore_index=args.padding_idx) 
 ```
+## 4) Write code for training loop
+
+The model has to be trained for 40 epochs to get a reasonable performance. The training code can be found in [train.py](https://github.com/sabbiracoustic1006/image-caption-generation/blob/main/train.py) 
