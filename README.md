@@ -326,3 +326,10 @@ if valid_bleu > best_bleu:
     
 ```
 
+# 6) Make inference using the model to see output
+the inference on validation dataset is performed using the code below. Running this code will create a folder named predicted-captions and the images with predicted captions as their title will be saved in the folder.
+
+```markdown
+# run the command in the commandline
+python inference.py
+```
